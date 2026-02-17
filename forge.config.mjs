@@ -30,12 +30,12 @@ export default {
             config: {
                 build: [
                     {
-                        entry: 'src/main.ts',
+                        entry: 'src/main/main.ts',
                         config: 'vite.main.config.mjs',
                         target: 'main',
                     },
                     {
-                        entry: 'src/preload.ts',
+                        entry: 'src/preload/preload.ts',
                         config: 'vite.preload.config.mjs',
                         target: 'preload',
                     },
