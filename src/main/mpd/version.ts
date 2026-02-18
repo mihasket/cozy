@@ -1,4 +1,4 @@
-import { VersionError } from './mpd/error';
+import { VersionError } from './error';
 
 export class Version {
     private major: number;
