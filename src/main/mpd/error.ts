@@ -6,6 +6,13 @@ export class MpdError extends Error {
     }
 }
 
+export class SocketError extends MpdError {
+    constructor(message: string) {
+        super(message);
+        console.error(`Socket error: ${message}`);
+    }
+}
+
 export class ResponseError extends MpdError {
     constructor(message: string) {
         super(message);
@@ -13,7 +20,6 @@ export class ResponseError extends MpdError {
     }
 }
 
-// Specific error types
 export class ParseError extends MpdError {
     constructor(message: string) {
         super(message);

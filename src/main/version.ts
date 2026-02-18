@@ -27,4 +27,9 @@ export class Version {
     toString(): string {
         return `${this.major}.${this.minor}.${this.patch}`;
     }
+
+    isValidVersion(): boolean {
+        // TODO: support older versions
+        return this.minor === 24;
+    }
 }

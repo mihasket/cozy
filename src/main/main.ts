@@ -28,9 +28,7 @@ const createWindow = () => {
     mainWindow.webContents.openDevTools();
 };
 
-app.whenReady().then(() => {
-    const mpdClient = new MpdClient(null, null, null);
-
+app.whenReady().then(async () => {
     createWindow();
 
     // On OS X it's common to re-create a window in the app when the
@@ -41,8 +39,14 @@ app.whenReady().then(() => {
         }
     });
 
-    mpdClient.connect();
-    mpdClient.sendCommand('status');
+    try {
+        const mpdClient = new MpdClient(null, null, null);
+
+        await mpdClient.connect();
+        mpdClient.sendCommand('status');
+    } catch (err) {
+        console.log(err);
+    }
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
