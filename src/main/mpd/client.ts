@@ -9,16 +9,15 @@ export class MpdClient {
 
     constructor(address: string | null, port: number | null, timeout: number | null) {
         this.address =
-            address ??
-            process.env.MPD_HOST ??
+            (address || process.env.MPD_HOST) ??
             (process.env.XDG_RUNTIME_DIR
                 ? ((this.isUnix = true), `${process.env.XDG_RUNTIME_DIR}/mpd/socket`)
                 : 'localhost');
 
-        this.port = port ?? (process.env.MPD_PORT ? Number(process.env.MPD_PORT) : 6600);
+        this.port = port || (process.env.MPD_PORT ? Number(process.env.MPD_PORT) : 6600);
 
         this.timeout =
-            timeout ?? (process.env.MPD_TIMEOUT ? Number(process.env.MPD_TIMEOUT) : 3000);
+            timeout || (process.env.MPD_TIMEOUT ? Number(process.env.MPD_TIMEOUT) : 3000);
     }
 
     connect() {
@@ -32,7 +31,6 @@ export class MpdClient {
         }
 
         this.socket.on('data', (data) => {
-            // TODO: Parse the recieved data, check for errors
             console.log(`Received from server: ${data.toString()}`);
         });
 
