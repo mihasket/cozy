@@ -1,7 +1,7 @@
 import { Socket } from 'net';
 import { ParseError, SocketError, VersionError } from './error';
 import EventEmitter from 'events';
-import { Version } from '../version';
+import { Version } from './version';
 
 export class MpdClient extends EventEmitter {
     private address: string;
