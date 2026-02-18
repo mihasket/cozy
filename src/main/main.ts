@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { MpdClient } from './mpd/client';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -27,10 +28,9 @@ const createWindow = () => {
     mainWindow.webContents.openDevTools();
 };
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+    const mpdClient = new MpdClient(null, null, null);
+
     createWindow();
 
     // On OS X it's common to re-create a window in the app when the
@@ -40,6 +40,9 @@ app.whenReady().then(() => {
             createWindow();
         }
     });
+
+    mpdClient.connect();
+    mpdClient.sendCommand('status');
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

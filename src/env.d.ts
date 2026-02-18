@@ -8,3 +8,12 @@ declare module '*.vue' {
     const component: DefineComponent<unknown, unknown, unknown>;
     export default component;
 }
+
+declare namespace NodeJS {
+    interface ProcessEnv {
+        MPD_HOST: string | undefined;
+        MPD_PORT: string | undefined;
+        MPD_TIMEOUT: string | undefined;
+        XDG_RUNTIME_DIR: string | undefined;
+    }
+}
