@@ -43,7 +43,7 @@ app.whenReady().then(async () => {
         const mpdClient = new MpdClient(null, null, null);
 
         await mpdClient.connect();
-        mpdClient.sendCommand('status');
+        await mpdClient.sendStatus();
     } catch (err) {
         console.log(err);
     }

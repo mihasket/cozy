@@ -1,14 +1,25 @@
 import { Socket } from 'net';
-import { ParseError, SocketError, VersionError } from './error';
+import { ParseError, ResponseError, SocketError, VersionError } from './error';
 import EventEmitter from 'events';
 import { Version } from './version';
+import { MpdCommands } from './commands/client-commands';
+import { MpdParse } from './commands/parse';
+import { Status } from './commands/status';
 
-export class MpdClient extends EventEmitter {
+interface PendingCommand {
+    command: string;
+    resolve: (response: string) => void;
+    reject: (error: Error) => void;
+}
+
+export class MpdClient extends EventEmitter implements MpdCommands {
     private address: string;
     private port: number;
     private timeout: number;
+    private responseBuffer: string = '';
     private socket: Socket | null = null;
     private isUnix: boolean = false;
+    private commandQueue: PendingCommand[] = [];
 
     constructor(address: string | null, port: number | null, timeout: number | null) {
         super();
@@ -42,7 +53,9 @@ export class MpdClient extends EventEmitter {
                     this.handleVersion(data.toString());
 
                     // Setup a handler for other requests
-                    this.handleRequests();
+                    this.socket!.on('data', (data) => {
+                        this.handleResponse(data.toString());
+                    });
 
                     resolve();
                 } catch (error) {
@@ -65,16 +78,6 @@ export class MpdClient extends EventEmitter {
         });
     }
 
-    private handleRequests() {
-        if (this.socket == null) {
-            throw new SocketError('Cannot send: socket not connected');
-        }
-
-        this.socket.on('data', (data) => {
-            console.log(`MPD sent: ${data}`);
-        });
-    }
-
     private handleVersion(data: string) {
         console.log(`Parsing the version: ${data}`);
 
@@ -92,11 +95,66 @@ export class MpdClient extends EventEmitter {
         }
     }
 
-    sendCommand(command: string) {
+    private handleResponse(data: string) {
+        this.responseBuffer += data;
+
+        // Check if we have a complete response (ends with OK or ACK)
+        const lines = this.responseBuffer.split('\n');
+        const completionIndex = lines.findIndex(
+            (line) => line.startsWith('OK') || line.startsWith('ACK')
+        );
+
+        // Response not complete yet, wait for more data
+        if (completionIndex === -1) {
+            return;
+        }
+
+        const responseLines = lines.slice(0, completionIndex);
+        const response = responseLines.join('\n');
+        const statusLine = lines[completionIndex];
+
+        this.responseBuffer = lines.slice(completionIndex + 1).join('\n');
+
+        const pending = this.commandQueue.shift();
+
+        if (!pending) {
+            console.warn('Received response with no pending command:', response);
+            return;
+        }
+
+        if (statusLine.startsWith('ACK')) {
+            const errorMatch = statusLine.match(/ACK \[(\d+)@(\d+)\] \{(.*?)\} (.*)/);
+            const errorMessage = errorMatch ? errorMatch[4] : statusLine;
+            pending.reject(new ResponseError(errorMessage));
+        } else {
+            pending.resolve(response);
+        }
+    }
+
+    private async sendCommand(command: string): Promise<string> {
         if (this.socket == null) {
             throw new SocketError('Cannot send: socket not connected');
         }
 
-        this.socket.write(`${command}\n`);
+        return new Promise<string>((resolve, reject) => {
+            this.commandQueue.push({ command, resolve, reject });
+
+            this.socket!.write(`${command}\n`);
+        });
+    }
+
+    private async sendAndParse<T extends MpdParse>(
+        command: string,
+        Constructor: new () => T
+    ): Promise<T> {
+        const response = await this.sendCommand(command);
+        const result = new Constructor();
+        result.parse(response.split('\n'));
+        return result;
+    }
+
+    async sendStatus(): Promise<Status> {
+        const response: Status = await this.sendAndParse('status', Status);
+        return response;
     }
 }
